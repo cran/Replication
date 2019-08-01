@@ -1,7 +1,7 @@
 Package: Replication
 Type: Package
 Title: Test Replications by Means of the Prior Predictive p-Value
-Version: 0.1.0
+Version: 0.1.1
 Authors@R: c(
     person(c("M.A.J."), "Zondervan-Zwijnenburg", role = c("aut","cre"), email = "m.a.j.zwijnenburg@uu.nl"),
     person(c("Herbert"), "Hoijtink", role = c("ths"), email = "h.hoijtink@uu.nl"),
@@ -15,11 +15,11 @@ Imports: quadprog, graphics, MASS, runjags(>= 2.0.4-2), rjags
 Encoding: UTF-8
 LazyData: true
 NeedsCompilation: no
-Packaged: 2019-03-12 08:04:47 UTC; marielle
+Packaged: 2019-07-31 12:23:21 UTC; marielle
 Author: M.A.J. Zondervan-Zwijnenburg [aut, cre],
   Herbert Hoijtink [ths],
   Caspar J van Lissa [ctb],
   Consortium Individual Development [fnd] (NWO grant number 024.001.003)
 Maintainer: M.A.J. Zondervan-Zwijnenburg <m.a.j.zwijnenburg@uu.nl>
 Repository: CRAN
-Date/Publication: 2019-03-13 14:53:35 UTC
+Date/Publication: 2019-08-01 14:50:02 UTC

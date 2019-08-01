@@ -4,7 +4,7 @@
 \description{
 Calculates an approximate likelihood ratio (D) for new data (y.r) and predicted data (y.s) according to the proposed constraints, and generates a prior predictive p-value.}
 \usage{
-ppc.step2step3(step1, y.r, model = model, H0, s.i,
+ppc.step2step3(step1, y.r, model = model, H0, H0check=TRUE, s.i,
         ordered = NULL, sample.cov = NULL, sample.mean = NULL, sample.nobs = NULL,
         group = NULL, cluster = NULL, constraints = "", WLS.V = NULL, NACOV = NULL,
         bayes = FALSE, dp = NULL, convergence = "manual", nchains = 2)
@@ -15,6 +15,7 @@ ppc.step2step3(step1, y.r, model = model, H0, s.i,
   \item{y.r}{A data.frame with the new data. If y.r = NA, the approximate likelihood ratio will only be computed for the predicted data y.s.}
   \item{model}{The (b)lavaan model that is to be fitted to the data.}
   \item{H0}{The replication hypothesis within quotes "" with the lavaan plabels as parameter names and parts separated with &. For more information on hypothesis specification, see the details section below.}
+  \item{H0check}{Logic. If TRUE, the function will check whether H0 is in line with the original data (which it should be) before performing the ppc. The ppc will return an error if H0 does not pass the check.}
   \item{s.i}{A vector of length p with indices for the (pooled) standard deviation parameters with which the effect sizes should be computed. Default = NULL.}
   \item{ordered}{Character vector. Only used if the data is in a data.frame. Treat these variables as ordered (ordinal) variables, if they are endogenous in the model. Importantly, all other variables will be treated as numeric (unless they are declared as ordered in the original data.frame}
   \item{sample.cov}{Numeric matrix. A sample variance-covariance matrix. The rownames and/or colnames must contain the observed variable names. For a multiple group analysis, a list with a variance-covariance matrix for each group. Note that if maximum likelihood estimation is used and likelihood="normal", the user provided covariance matrix is internally rescaled by multiplying it with a factor (N-1)/N, to ensure that the covariance matrix has been divided by N. This can be turned off by setting the sample.cov.rescale argument to FALSE.
@@ -96,20 +97,27 @@ set.seed(9)
 #create/load data
 n.o=30 #sample size original data
 y.o <- data.frame(y=rnorm2(n.o,0,1),x=rnorm2(n.o,3,1))
-#y.o <- correlate(as.matrix(y.o), corm=.70); y.o <- data.frame(y=y.o[,1],x=y.o[,2])
 n.r=50 #sample size new data
 y.r <- data.frame(y=rnorm2(n.r,0.5,1),x=rnorm2(n.r,3,1))
 
 #blavaan model
 model <- '
 y ~ x     #regression
-y ~1      #intercept not default in lavaan (but is in blavaan)
+y ~1
 '
 
 #Warning: This is a minimal example;
 step1.reg <- ppc.step1(y.o=y.o,model=model,nchains=2,n.r=10,nadapt=10,nburnin=10,nsample=10,nsim=10)
 
-step23.reg <- ppc.step2step3(step1=step1.reg,y.r=y.r,model=model,H0=".p2. = -0.878&.p1. > 0.301")
+pT <- step1.reg$pT
+#identify parameters of interest in table (could also be done manually)
+reg1 <- which(pT$lhs=="y"&pT$op=="~"&pT$rhs=="x")
+int <- which(pT$lhs=="y"&pT$op=="~1")
+hyp <- cbind(pT[c(int,reg1),"plabel"],c("<",">"),pT[c(int,reg1),"est"])
+print(hyp)
+H0 <- paste(hyp[,1],hyp[,2],hyp[,3],collapse="&")
+step23.reg <- ppc.step2step3(step1=step1.reg,y.r=y.r,model=model,H0=H0,H0check=TRUE)
+
 }
 \donttest{
 #the following example can be used, but may take >10 seconds
@@ -131,18 +139,18 @@ y.r <- data.frame(y=rnorm2(n.r,0.5,1),x=rnorm2(n.r,3,1))
 #blavaan model
 model <- '
 y ~ x     #regression
-y ~1      #intercept not default in lavaan (but is in blavaan)
+y ~1
 '
 
 #Warning: This is a minimal example;
 step1.reg <- ppc.step1(y.o=y.o,model=model,nchains=2,n.r=50)
 
 print(step1.reg$pT)
-#H0: #reg > est, int = est       =       B1>0.302 & B0= -0.878
+#H0: #reg > est, int = est       =       B1>0.236 & B0= -0.698
 pT <- step1.reg$pT #parameter table
 int.id <- which(pT$lhs=="y"&pT$op=="~1"&pT$rhs=="") #identify B0
 reg.id <- which(pT$lhs=="y"&pT$op=="~"&pT$rhs=="x") #identify B1
-hyp <- cbind(pT[c(int.id,reg.id),"plabel"],c("=",">"),c(pT[c(int.id,reg.id),"est"]))
+hyp <- cbind(pT[c(int.id,reg.id),"plabel"],c("<",">"),c(pT[c(int.id,reg.id),"est"]))
 print(hyp)
 H0 <- paste(hyp[,1],hyp[,2],hyp[,3],collapse="&")
 

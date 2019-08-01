@@ -150,8 +150,11 @@ create_matrices <- function(varnames, hyp){
       #colnames(IRr)[ncol(IRr)]<- ">"                           #mz
     }
 
-    if(E==0){
-      R <- IRr[,-ncol(IRr)]}else{  #mz
+    if(E==0&is.null(IRr)==FALSE){
+      R <- IRr[,-ncol(IRr)]}
+    if(is.null(IRr)==TRUE&E!=0){  #mz
+      R <- ERr[,-ncol(ERr)]}
+    if(is.null(IRr)==FALSE&E!=0){  #mz
         R <- rbind(ERr[,-ncol(ERr)],IRr[,-ncol(IRr)])}
     if(is.vector(R)==TRUE){matrix(R,nrow=1)}
     #mz

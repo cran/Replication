@@ -2,7 +2,7 @@
 posterior.step1 <- function(y.o, model,
                             sample.cov = NULL, sample.mean = NULL, sample.nobs = NULL, group = NULL,
                             constraints = "", WLS.V = NULL, NACOV = NULL,
-                            nchains=2, nadapt, nburnin, nsample, dp=NULL,convergence="manual",
+                            nchains=2, nadapt, nburnin, nsample, dp=NULL,convergence="manual",target,
                             imp=imp){
 
   #if missing data, impute and combine posterior distributions
@@ -13,7 +13,7 @@ posterior.step1 <- function(y.o, model,
     for (i in 1:imp$m){
       y.o.imp[[i]] <- complete(imp,i)
       y.o.imp[[i]] <- data.frame(sapply(y.o.imp[[i]] , function(x) as.numeric(as.character(x))))
-      fit <- bsem(model, data=y.o.imp[[i]], dp=dp,
+      fit <- bsem(model, data=y.o.imp[[i]], dp=dp, test="none", target=target,
                   sample.cov = sample.cov, sample.mean = sample.mean, sample.nobs = sample.nobs,
                   group = group, constraints = "", WLS.V = WLS.V, NACOV = NACOV,
                   n.chains=nchains, adapt = nadapt, burnin=nburnin, sample=nsample, convergence=convergence)
@@ -49,23 +49,24 @@ posterior.step1 <- function(y.o, model,
   }
 
   if(is.null(imp)==TRUE){
-    fit <- bsem(model, data=y.o, dp=dp,
+    fit <- bsem(model, data=y.o, dp=dp,test="none", target=target,
                 sample.cov = sample.cov, sample.mean = sample.mean, sample.nobs = sample.nobs,
                 group = group, constraints = "", WLS.V = WLS.V, NACOV = NACOV,
                 n.chains=nchains, adapt=nadapt, burnin=nburnin, sample=nsample, convergence=convergence)
     #store fixed and free output
     pT <- parameterTable(fit)
     free.i <- which(pT$free!=0)
-    traceplot <- plot(fit, pars=1:length(free.i), plot.type="trace")
 
     #obtain samples posterior
     post.y.o <- blavInspect(fit,"mcmc")
     post <<- list()
     for(i in 1:length(free.i)){post[[i]] <<- unlist(post.y.o[,i])}
+    traceplot <- plot(fit, pars=1:length(free.i), plot.type="trace")
+
   }
 
   #results
-  results <- list(post=post, pT=pT,free.i=free.i, traceplot)
+  results <- list(post=post, fit=fit, pT=pT,free.i=free.i, traceplot)
   return(results)
 
 }

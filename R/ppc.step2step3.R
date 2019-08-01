@@ -1,4 +1,4 @@
-ppc.step2step3 <- function(step1, y.r, model=model, H0,
+ppc.step2step3 <- function(step1, y.r, model=model, H0,H0check=TRUE,
                            s.i=NULL,
                            ordered = NULL, sample.cov = NULL, sample.mean = NULL, sample.nobs = NULL,
                            group = NULL, cluster = NULL, constraints = "", WLS.V = NULL, NACOV = NULL,
@@ -19,8 +19,37 @@ ppc.step2step3 <- function(step1, y.r, model=model, H0,
   vars <- pT1$plabel             #var names for estimated parameters
   mat <- create_matrices(varnames=c(vars),hyp=H0)
   R <- mat$R
+  if(is.vector(R)==TRUE){R<-matrix(R,nrow=1)}
   r <- mat$r
   E <- mat$E
+
+
+  #y.o check of H0
+  if(H0check==TRUE){
+    fit.o <- step1$fit.o
+    BKcov.o <- lavInspect(fit.o,"vcov")
+    pT.o <- parameterTable(fit.o)
+    free.i <- which(pT.o$free!=0)
+
+    if (sum(duplicated(rownames(BKcov.o)))>0){
+      pT.o <- pT.o[free.i,][-which(duplicated(rownames(BKcov.o))),]
+      Q.o <- pT.o$est
+      BKcov.o <- BKcov.o[!duplicated(rownames(BKcov.o)), !duplicated(colnames(BKcov.o))]
+    }else{
+      Q.r <- pT.o$est[free.i]
+    }
+
+    if(is.null(s.i)==FALSE){
+      s <- vector()
+      for (j in 1:length(r)){s[j] <- pT.o$est[ pT.o$id == s.i[j] ]}
+      r.e <- r*s
+      llratio.o <- llratio.f(BKcov=BKcov.o,Q=Q.r,R=R,r=r.e,E=E)
+    }else{
+      llratio.o <- llratio.f(BKcov=BKcov.o,Q=Q.r,R=R,r=r,E=E)}
+
+    if(llratio.o > 1e-20){stop("H0 not true in original data, please adjust")}
+  }
+
 
   llratio.s <- list()
   print("Calculating likelihood ratio for each y.s",quote=FALSE)
@@ -30,7 +59,7 @@ ppc.step2step3 <- function(step1, y.r, model=model, H0,
     for (i in 1:length(y.s)){
       setTxtProgressBar(pb,i)
       fit_l <- bsem(model, data=y.s[[i]],
-                    n.chains=nchains, dp=dp,
+                    n.chains=nchains, dp=dp,test="none", target="jags",
                     sample.cov = sample.cov, sample.mean = sample.mean, sample.nobs = sample.nobs,
                     group = group, constraints = "", WLS.V = WLS.V, NACOV = NACOV, convergence=convergence)
       pT <- parameterTable(fit_l)
@@ -64,7 +93,7 @@ ppc.step2step3 <- function(step1, y.r, model=model, H0,
   }else{
     for (i in 1:length(y.s)){
       setTxtProgressBar(pb,i)
-      fit_l <- sem(model, data=y.s[[i]],
+      fit_l <- sem(model, data=y.s[[i]],meanstructure=TRUE,
                    ordered = ordered, sample.cov = sample.cov, sample.mean = sample.mean, sample.nobs = sample.nobs,
                    group = group, cluster = cluster, constraints = "", WLS.V = WLS.V, NACOV = NACOV)
       pT.s <- parameterTable(fit_l)
@@ -106,13 +135,14 @@ ppc.step2step3 <- function(step1, y.r, model=model, H0,
     }
   }
 
+
   if(is.null(y.r)==FALSE){
     #for y.r
-    fit_r <- sem(model, data=y.r,
+    fit.r <- sem(model, data=y.r,meanstructure=TRUE,
                  ordered = ordered, sample.cov = sample.cov, sample.mean = sample.mean, sample.nobs = sample.nobs,
                  group = group, cluster = cluster, constraints = "", WLS.V = WLS.V, NACOV = NACOV)
-    BKcov.r <- lavInspect(fit_r,"vcov")
-    pT.r <- parameterTable(fit_r)
+    BKcov.r <- lavInspect(fit.r,"vcov")
+    pT.r <- parameterTable(fit.r)
     free.i <- which(pT.r$free!=0)
 
     if (sum(duplicated(rownames(BKcov.r)))>0){
@@ -125,7 +155,7 @@ ppc.step2step3 <- function(step1, y.r, model=model, H0,
 
     if(is.null(s.i)==FALSE){
       s <- vector()
-      for (j in 1:length(r)){s[j] <- pT$est[ pT$id == s.i[j] ]}
+      for (j in 1:length(r)){s[j] <- pT.r$est[ pT.r$id == s.i[j] ]}
       r.e <- r*s
       llratio.r <- llratio.f(BKcov=BKcov.r,Q=Q.r,R=R,r=r.e,E=E)
     }else{
