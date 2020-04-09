@@ -1,5 +1,7 @@
 ppc.plot <- function(llratio.s,llratio.r){
 
+  if(all(is.na(llratio.s)==TRUE)){stop("No valid llratio's were computed for the simulated data")}
+
   Mode <- function(x) {
     ux <- unique(x)
     ux[which.max(tabulate(match(x, ux)))]}

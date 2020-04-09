@@ -1,5 +1,4 @@
-ppc.step2step3 <- function(step1, y.r, model=model, H0,H0check=TRUE,
-                           s.i=NULL,
+ppc.step2step3 <- function(step1, y.r, model=model, H0,s.i=NULL,H0check=TRUE,y.o,
                            ordered = NULL, sample.cov = NULL, sample.mean = NULL, sample.nobs = NULL,
                            group = NULL, cluster = NULL, constraints = "", WLS.V = NULL, NACOV = NULL,
                            bayes=FALSE,dp=NULL,convergence="manual",nchains=2){
@@ -36,16 +35,16 @@ ppc.step2step3 <- function(step1, y.r, model=model, H0,H0check=TRUE,
       Q.o <- pT.o$est
       BKcov.o <- BKcov.o[!duplicated(rownames(BKcov.o)), !duplicated(colnames(BKcov.o))]
     }else{
-      Q.r <- pT.o$est[free.i]
+      Q.o <- pT.o$est[free.i]
     }
 
     if(is.null(s.i)==FALSE){
       s <- vector()
       for (j in 1:length(r)){s[j] <- pT.o$est[ pT.o$id == s.i[j] ]}
       r.e <- r*s
-      llratio.o <- llratio.f(BKcov=BKcov.o,Q=Q.r,R=R,r=r.e,E=E)
+      llratio.o <- llratio.f(BKcov=BKcov.o,Q=Q.o,R=R,r=r.e,E=E)
     }else{
-      llratio.o <- llratio.f(BKcov=BKcov.o,Q=Q.r,R=R,r=r,E=E)}
+      llratio.o <- llratio.f(BKcov=BKcov.o,Q=Q.o,R=R,r=r,E=E)}
 
     if(llratio.o > 1e-20){stop("H0 not true in original data, please adjust")}
   }
@@ -166,6 +165,7 @@ ppc.step2step3 <- function(step1, y.r, model=model, H0,H0check=TRUE,
     ppc.plot(llratio.s,llratio.r)
 
     #prior predictive p
+    if(all(is.na(llratio.s)==TRUE)){stop("No valid llratio's were computed for the simulated data")}
     p <- sum((llratio.s)>=llratio.r)/length(llratio.s) #prior predictive p-value
     results <- list("llratio.r"=llratio.r,"p-value"=p,"llratio.s"=llratio.s,"H0 matrices"=mat,
                     "pT.s"=pT.s[,c(1:4,12)],"pT.1"=pT1[,c(1:4,12)])
